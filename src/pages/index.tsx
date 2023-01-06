@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
+import { emit, listen } from "@tauri-apps/api/event";
 import Image from "next/image";
 import reactLogo from "../assets/react.svg";
 import tauriLogo from "../assets/tauri.svg";
@@ -13,6 +14,15 @@ function App() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
     setGreetMsg(await invoke("greet", { name }));
   }
+
+  useEffect(() => {
+    listen("openFile", (windowEvent) => {
+      if (typeof windowEvent.payload == "string") {
+        setGreetMsg(windowEvent.payload);
+      }
+     
+    }).then((unlisten) => {});
+  }, []);
 
   return (
     <div className="container">
