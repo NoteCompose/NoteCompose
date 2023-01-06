@@ -3,7 +3,10 @@
     windows_subsystem = "windows"
 )]
 
+use std::{fs::File, io::Read};
+
 use staff::{
+    parse::Parser,
     render::staff::{
         measure::{Clef, Measure, MeasureItem, MeasureItemKind},
         renderer::Renderer,
@@ -11,19 +14,6 @@ use staff::{
     time::{Duration, DurationKind},
 };
 use tauri::{api::dialog::FileDialogBuilder, CustomMenuItem, Menu, MenuItem, Submenu};
-
-#[tauri::command]
-fn items() -> String {
-    let renderer = Renderer::default();
-    let mut items = vec![MeasureItem::rest(
-        Duration::new(DurationKind::Quarter, false),
-        &renderer,
-    )];
-    let measure = Measure::new(items, &renderer);
-
-    let render_items = measure.items(0., 0., 0., 0, &renderer);
-    serde_json::to_string(&render_items).unwrap()
-}
 
 fn main() {
     let open = CustomMenuItem::new("open".to_string(), "Open").accelerator("Cmd+O");
@@ -39,17 +29,24 @@ fn main() {
             "open" => {
                 FileDialogBuilder::default()
                     .add_filter("LilyPond", &["ly"])
-                    .pick_file(move |path_buf| match path_buf {
-                        Some(path) => event
-                            .window()
-                            .emit("openFile", Some(path.to_string_lossy().to_string()))
-                            .unwrap(),
-                        _ => {}
+                    .pick_file(move |path_buf| {
+                        if let Some(path) = path_buf {
+                            let mut contents = String::new();
+                            let mut f = File::open(path).unwrap();
+                            f.read_to_string(&mut contents).unwrap();
+
+                            let mut parser = Parser::from(contents.as_str());
+                            let renderer = Renderer::default();
+                            let staff = parser.staff(&renderer);
+
+                            let render_items = staff.items(0., 0., &renderer);
+                            let items = serde_json::to_string(&render_items).unwrap();
+                            event.window().emit("items", Some(items)).unwrap();
+                        }
                     });
             }
             _ => todo!(),
         })
-        .invoke_handler(tauri::generate_handler![items])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

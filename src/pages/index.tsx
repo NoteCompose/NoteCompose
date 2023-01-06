@@ -10,27 +10,15 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
 
   useEffect(() => {
-    listen("openFile", (windowEvent) => {
+    listen("items", (windowEvent) => {
       if (typeof windowEvent.payload == "string") {
-        setGreetMsg(windowEvent.payload);
+        const json = JSON.parse(windowEvent.payload);
+        setItems(json);
       }
     }).then((unlisten) => {});
   }, []);
 
   const [items, setItems] = useState([]);
-
-  async function getClefPath() {
-    const s = await invoke("items");
-
-    if (typeof s == "string") {
-      const json = JSON.parse(s);
-      setItems(json);
-    }
-  }
-
-  useEffect(() => {
-    getClefPath();
-  }, []);
 
   const svgItems = items.map((item) => {
     console.log(item);
