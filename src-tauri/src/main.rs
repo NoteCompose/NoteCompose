@@ -3,12 +3,26 @@
     windows_subsystem = "windows"
 )]
 
+use staff::{
+    render::staff::{
+        measure::{Clef, Measure, MeasureItem, MeasureItemKind},
+        renderer::Renderer,
+    },
+    time::{Duration, DurationKind},
+};
 use tauri::{api::dialog::FileDialogBuilder, CustomMenuItem, Menu, MenuItem, Submenu};
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn items() -> String {
+    let renderer = Renderer::default();
+    let mut items = vec![MeasureItem::rest(
+        Duration::new(DurationKind::Quarter, false),
+        &renderer,
+    )];
+    let measure = Measure::new(items, &renderer);
+
+    let render_items = measure.items(0., 0., 0., 0, &renderer);
+    serde_json::to_string(&render_items).unwrap()
 }
 
 fn main() {
@@ -28,13 +42,14 @@ fn main() {
                     .pick_file(move |path_buf| match path_buf {
                         Some(path) => event
                             .window()
-                            .emit("openFile", Some(path.to_string_lossy().to_string())).unwrap(),
+                            .emit("openFile", Some(path.to_string_lossy().to_string()))
+                            .unwrap(),
                         _ => {}
                     });
             }
             _ => todo!(),
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![items])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
