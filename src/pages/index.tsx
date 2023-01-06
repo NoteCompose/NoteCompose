@@ -1,14 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
-import { emit, listen } from "@tauri-apps/api/event";
-import Image from "next/image";
-import reactLogo from "../assets/react.svg";
-import tauriLogo from "../assets/tauri.svg";
-import nextLogo from "../assets/next.svg";
+import { useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-
   useEffect(() => {
     listen("items", (windowEvent) => {
       if (typeof windowEvent.payload == "string") {
@@ -18,10 +11,12 @@ function App() {
     }).then((unlisten) => {});
   }, []);
 
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState({
+    file_name: null,
+    items: [],
+  });
 
-  const svgItems = items.map((item) => {
-    console.log(item);
+  const svgItems = items.items.map((item) => {
     if (item.kind == "line") {
       return (
         <line
@@ -37,9 +32,28 @@ function App() {
   });
 
   return (
-    <div>
-      <h1>{greetMsg}</h1>
-      <svg>{svgItems}</svg>
+    <div className="app">
+      <ul className="tabs">
+        <li>
+          <div className="file-name">
+            {items.file_name != null ? items.file_name : "Welcome"}
+          </div>
+          <div className="close">&#10006;</div>
+        </li>
+      </ul>
+
+      <div className="content">
+        {items.file_name != null ? (
+          <svg>{svgItems}</svg>
+        ) : (
+          <div className="welcome">
+            <h1>NoteCompose</h1>
+            <h4>v0.1.0</h4>
+            <div className="button">New</div>
+            <div className="button">Open</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
